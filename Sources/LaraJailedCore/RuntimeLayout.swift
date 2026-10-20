@@ -12,11 +12,15 @@ public struct RuntimeLayout: Sendable {
     public var packagesDirectory: URL { root.appendingPathComponent("Packages", isDirectory: true) }
     public var packageDataDirectory: URL { root.appendingPathComponent("PackageData", isDirectory: true) }
     public var logsDirectory: URL { root.appendingPathComponent("Logs", isDirectory: true) }
+    public var rootFSDirectory: URL { root.appendingPathComponent("RootFS", isDirectory: true) }
 
     public func prepare(fileManager: FileManager = .default) throws {
-        for directory in [root, packagesDirectory, packageDataDirectory, logsDirectory] {
-            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true,
-                                            attributes: [.posixPermissions: 0o700])
+        for directory in [root, packagesDirectory, packageDataDirectory, logsDirectory, rootFSDirectory] {
+            try fileManager.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
         }
     }
 
