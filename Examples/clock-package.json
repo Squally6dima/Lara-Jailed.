@@ -1,0 +1,8 @@
+{
+  "id": "org.lara.example.clock",
+  "name": "Clock Example",
+  "version": "1.0.0",
+  "summary": "Example manifest for testing package metadata validation.",
+  "minimumLaraVersion": "0.1.0",
+  "permissions": []
+}
