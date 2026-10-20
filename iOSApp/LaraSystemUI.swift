@@ -143,8 +143,18 @@ private struct LaraSystemAppScreen: View {
     let app: LaraSystemApp
     @Environment(\.dismiss) private var dismiss
     @State private var terminalInput = ""
-    @State private var terminalLines = ["Lara Terminal 0.1", "User-space shell prototype", "Type help to see available demo commands."]
+    @State private var terminalLines = ["Lara Terminal 0.2", "Container-local user-space shell", "Type help to list commands."]
+    @State private var currentDirectory = "/"
+    @State private var runtimeError: String?
     @State private var notes = ""
+
+    private var fileSystem: UserSpaceFileSystem {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        return UserSpaceFileSystem(rootURL: base.appendingPathComponent("LaraJailed/RootFS", isDirectory: true))
+    }
+
+    private var shell: UserSpaceShell { UserSpaceShell(fileSystem: fileSystem) }
 
     var body: some View {
         NavigationStack {
@@ -175,39 +185,58 @@ private struct LaraSystemAppScreen: View {
 
     private var terminalView: some View {
         VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Circle().fill(runtimeError == nil ? .green : .red).frame(width: 8, height: 8)
+                Text("lara@ios:\(currentDirectory)$").font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary).lineLimit(1)
+                Spacer()
+                Button { terminalLines = [] } label: { Image(systemName: "trash") }
+                    .accessibilityLabel("Clear terminal")
+            }
+            if let runtimeError {
+                Text(runtimeError).font(.footnote).foregroundStyle(.red)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 7) {
                     ForEach(Array(terminalLines.enumerated()), id: \.offset) { _, line in
-                        Text(line).font(.system(.callout, design: .monospaced))
-                            .foregroundStyle(line.hasPrefix("$") ? .cyan : Color.primary)
+                        Text(line.isEmpty ? " " : line)
+                            .font(.system(.callout, design: .monospaced))
+                            .foregroundStyle(line.hasPrefix("lara@ios:") ? .cyan : Color.primary)
+                            .textSelection(.enabled)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             HStack {
                 Text("$").font(.system(.body, design: .monospaced).bold()).foregroundStyle(.green)
-                TextField("Enter demo command", text: $terminalInput)
+                TextField("help, ls, cd, cat…", text: $terminalInput)
                     .font(.system(.body, design: .monospaced))
                     .autocorrectionDisabled().textInputAutocapitalization(.never)
                     .onSubmit(runCommand)
                 Button("Run", action: runCommand).fontWeight(.semibold)
             }.padding(12).background(.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         }.padding()
+        .task {
+            do { try fileSystem.prepare() }
+            catch { runtimeError = error.localizedDescription }
+        }
     }
 
     private var filesView: some View {
-        List {
-            Section("Lara container") {
-                Label("Packages", systemImage: "shippingbox").badge("0")
-                Label("Documents", systemImage: "doc")
-                Label("Downloads", systemImage: "arrow.down.circle")
-                Label("Extensions", systemImage: "puzzlepiece.extension").badge("0")
-                Label("Logs", systemImage: "doc.text")
+        NavigationStack {
+            List {
+                Section("RootFS — app container") {
+                    ForEach((try? fileSystem.list("/")) ?? [], id: \.self) { name in
+                        Label(name, systemImage: "folder")
+                    }
+                }
+                Section {
+                    Text("Files are stored inside Lara's private container, not in the real iOS root filesystem.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
-            Section {
-                Text("This is a virtual file-browser view. Real file operations are not connected yet.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-        }.listStyle(.insetGrouped)
+            .navigationTitle("RootFS")
+            .task { try? fileSystem.prepare() }
+        }
     }
 
     private var packageView: some View {
@@ -286,21 +315,15 @@ private struct LaraSystemAppScreen: View {
     private func runCommand() {
         let command = terminalInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !command.isEmpty else { return }
-        terminalLines.append("$ " + command)
-        switch command {
-        case "help":
-            terminalLines.append("Available demo commands: help, clear, uname, pwd, ls")
-        case "clear":
+        terminalLines.append("lara@ios:\(currentDirectory)$ " + command)
+        let result = shell.execute(command, currentDirectory: currentDirectory)
+        currentDirectory = result.currentDirectory
+        if result.output.contains("\u{001B}[2J") {
             terminalLines = []
-        case "uname":
-            terminalLines.append("Lara user-space (simulated; not the host kernel)")
-        case "pwd":
-            terminalLines.append("/Lara")
-        case "ls":
-            terminalLines.append("Documents  Downloads  Packages  Extensions  Logs")
-        default:
-            terminalLines.append("Command not found. Type help.")
+        } else if !result.output.isEmpty {
+            terminalLines.append(contentsOf: result.output.components(separatedBy: "\n"))
         }
+        if result.shouldExit { terminalLines.append("Session ended (close this sheet to return).") }
         terminalInput = ""
     }
 }
