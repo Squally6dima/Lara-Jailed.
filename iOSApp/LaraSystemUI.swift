@@ -166,7 +166,7 @@ private struct LaraSystemAppScreen: View {
             .navigationTitle(app.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
             }
@@ -239,13 +239,23 @@ private struct LaraSystemAppScreen: View {
     }
 
     private var extensionsView: some View {
-        ContentUnavailableView("No Extensions", systemImage: "puzzlepiece.extension",
-                               description: Text("Lara-native extensions will appear here. Existing jailbreak tweaks are not automatically compatible."))
+        emptyState(title: "No Extensions", symbol: "puzzlepiece.extension",
+                   message: "Lara-native extensions will appear here. Existing jailbreak tweaks are not automatically compatible.")
     }
 
     private var browserView: some View {
-        ContentUnavailableView("Browser module", systemImage: "safari",
-                               description: Text("A browser view can be connected in a later milestone."))
+        emptyState(title: "Browser module", symbol: "safari",
+                   message: "A browser view can be connected in a later milestone.")
+    }
+
+    private func emptyState(title: String, symbol: String, message: String) -> some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: symbol).font(.system(size: 42)).foregroundStyle(.secondary)
+            Text(title).font(.title3.weight(.semibold))
+            Text(message).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Spacer()
+        }.padding(28).frame(maxWidth: .infinity)
     }
 
     private var notesView: some View {
