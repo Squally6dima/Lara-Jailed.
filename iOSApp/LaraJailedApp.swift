@@ -74,7 +74,7 @@ struct LaraHomeView: View {
                 HStack(spacing: 0) {
                     ForEach(LaraTab.allCases) { tab in
                         Button {
-                            withAnimation(.snappy(duration: 0.2)) { selectedTab = tab }
+                            withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab }
                         } label: {
                             VStack(spacing: 6) {
                                 Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold))
@@ -132,7 +132,7 @@ struct LaraHomeView: View {
     }
 
     private func quickAction(_ title: String, symbol: String, tab: LaraTab) -> some View {
-        Button { withAnimation(.snappy(duration: 0.2)) { selectedTab = tab } } label: {
+        Button { withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab } } label: {
             VStack(alignment: .leading, spacing: 12) {
                 Image(systemName: symbol).font(.title2).foregroundStyle(.cyan)
                 Text(title).font(.headline)
