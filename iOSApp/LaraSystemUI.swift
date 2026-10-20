@@ -10,7 +10,6 @@ private struct LaraSystemApp: Identifiable {
 struct LaraSystemView: View {
     @State private var openedApp: LaraSystemApp?
     @State private var showControlCenter = false
-    @State private var page = 0
 
     private let apps: [LaraSystemApp] = [
         .init(id: "files", title: "Files", symbol: "folder.fill", tint: .blue),
@@ -64,7 +63,7 @@ struct LaraSystemView: View {
                     .padding(.horizontal, 20).padding(.top, 22)
 
                 LazyVGrid(columns: columns, spacing: 25) {
-                    ForEach(Array(apps.enumerated()), id: \.element.id) { index, app in
+                    ForEach(apps) { app in
                         Button {
                             openedApp = app
                         } label: {
