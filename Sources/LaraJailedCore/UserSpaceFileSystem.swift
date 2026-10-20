@@ -37,7 +37,7 @@ public struct UserSpaceFileSystem: Sendable {
             let cleanPath = path.replacingOccurrences(of: "lar a", with: "lara")
             try createDirectory(cleanPath, intermediates: true)
         }
-        let motd = resolve("etc/motd")
+        let motd = try resolve("etc/motd")
         if !fm.fileExists(atPath: motd.path) {
             try Data("Welcome to Lara user space. This is a container-local prototype.\n".utf8)
                 .write(to: motd, options: .atomic)
