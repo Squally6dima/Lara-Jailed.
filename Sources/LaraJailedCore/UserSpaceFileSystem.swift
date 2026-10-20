@@ -33,9 +33,8 @@ public struct UserSpaceFileSystem: @unchecked Sendable {
     public func prepare() throws {
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true,
                                attributes: [.posixPermissions: 0o700])
-        for path in ["bin", "etc", "tmp", "home", "home/lar a", "usr", "usr/bin", "var", "var/log", "var/cache", "Applications", "Packages"] {
-            let cleanPath = path.replacingOccurrences(of: "lar a", with: "lara")
-            try createDirectory(cleanPath, intermediates: true)
+        for path in ["bin", "etc", "tmp", "home", "home/lara", "usr", "usr/bin", "var", "var/log", "var/cache", "Applications", "Packages"] {
+            try createDirectory(path, intermediates: true)
         }
         let motd = try resolve("etc/motd")
         if !fm.fileExists(atPath: motd.path) {
@@ -65,6 +64,7 @@ public struct UserSpaceFileSystem: @unchecked Sendable {
         guard url.path == rootURL.path || url.path.hasPrefix(rootURL.path + "/") else {
             throw UserSpaceFileError.invalidPath(path)
         }
+        try rejectSymbolicLinkComponents(in: url, originalPath: path)
         return url
     }
 
@@ -135,6 +135,19 @@ public struct UserSpaceFileSystem: @unchecked Sendable {
         }
         guard isDirectory.boolValue else { throw UserSpaceFileError.notDirectory(path) }
         return virtualPath(for: url)
+    }
+
+    private func rejectSymbolicLinkComponents(in url: URL, originalPath: String) throws {
+        let relative = url.path == rootURL.path ? "" : String(url.path.dropFirst(rootURL.path.count + 1))
+        var cursor = rootURL
+        for component in relative.split(separator: "/") {
+            cursor.appendPathComponent(String(component))
+            guard fm.fileExists(atPath: cursor.path) else { continue }
+            let values = try cursor.resourceValues(forKeys: [.isSymbolicLinkKey])
+            if values.isSymbolicLink == true {
+                throw UserSpaceFileError.invalidPath(originalPath)
+            }
+        }
     }
 
     private func requireParentDirectory(_ url: URL, virtualPath: String, allowMissingParent: Bool = false) throws {
