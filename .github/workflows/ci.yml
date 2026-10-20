@@ -71,6 +71,32 @@ jobs:
           test -d "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/LaraJailed-iOS-Simulator.zip
 
+      - name: Build for physical iOS device (unsigned)
+        run: |
+          xcodebuild \
+            -project LaraJailed.xcodeproj \
+            -scheme LaraJailed \
+            -sdk iphoneos \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DeviceDerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned device app artifact
+        run: |
+          APP_PATH="build/DeviceDerivedData/Build/Products/Debug-iphoneos/LaraJailed.app"
+          test -d "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/LaraJailed-iOS-Unsigned.zip
+
+      - name: Upload unsigned device app
+        uses: actions/upload-artifact@v4
+        with:
+          name: LaraJailed-iOS-Unsigned
+          path: build/LaraJailed-iOS-Unsigned.zip
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload simulator app
         uses: actions/upload-artifact@v4
         with:
