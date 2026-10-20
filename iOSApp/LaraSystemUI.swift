@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import LaraJailedCore
 
 private struct LaraSystemApp: Identifiable {
@@ -51,9 +52,9 @@ struct LaraSystemView: View {
                     .padding(.top, 4)
 
                     TabView(selection: $selectedPage) {
-                        appPage(apps, topInset: geometry.safeAreaInsets.top)
+                        appPage(apps)
                             .tag(0)
-                        appPage([], topInset: geometry.safeAreaInsets.top)
+                        appPage([])
                             .tag(1)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
@@ -101,7 +102,7 @@ struct LaraSystemView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func appPage(_ pageApps: [LaraSystemApp], topInset: CGFloat) -> some View {
+    private func appPage(_ pageApps: [LaraSystemApp]) -> some View {
         VStack {
             LazyVGrid(columns: columns, spacing: 25) {
                 ForEach(pageApps) { app in
@@ -116,7 +117,6 @@ struct LaraSystemView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .contentMargins(.top, max(0, topInset * 0.08), for: .scrollContent)
     }
 }
 
