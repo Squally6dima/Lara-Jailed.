@@ -1,4 +1,5 @@
 import SwiftUI
+import LaraJailedCore
 
 private struct LaraSystemApp: Identifiable {
     let id: String
