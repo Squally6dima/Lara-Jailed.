@@ -11,132 +11,241 @@ private struct LaraSystemApp: Identifiable {
 struct LaraSystemView: View {
     @State private var openedApp: LaraSystemApp?
     @State private var showControlCenter = false
+    @State private var selectedPage = 0
 
     private let apps: [LaraSystemApp] = [
-        .init(id: "files", title: "Files", symbol: "folder.fill", tint: .blue),
+        .init(id: "files", title: "Files", symbol: "folder.fill", tint: Color(red: 0.08, green: 0.52, blue: 0.96)),
         .init(id: "terminal", title: "Terminal", symbol: "terminal.fill", tint: .black),
-        .init(id: "packages", title: "Packages", symbol: "shippingbox.fill", tint: .orange),
-        .init(id: "settings", title: "Settings", symbol: "gearshape.fill", tint: .gray),
-        .init(id: "safari", title: "Browser", symbol: "safari.fill", tint: .cyan),
-        .init(id: "notes", title: "Notes", symbol: "note.text", tint: .yellow),
-        .init(id: "activity", title: "Activity", symbol: "waveform.path", tint: .green),
-        .init(id: "extensions", title: "Extensions", symbol: "puzzlepiece.extension.fill", tint: .purple),
-        .init(id: "about", title: "Lara", symbol: "sparkles", tint: .cyan)
+        .init(id: "packages", title: "Packages", symbol: "shippingbox.fill", tint: Color(red: 0.96, green: 0.48, blue: 0.12)),
+        .init(id: "settings", title: "Settings", symbol: "gearshape.fill", tint: Color(white: 0.48)),
+        .init(id: "safari", title: "Browser", symbol: "safari.fill", tint: Color(red: 0.12, green: 0.68, blue: 0.88)),
+        .init(id: "notes", title: "Notes", symbol: "note.text", tint: Color(red: 0.98, green: 0.76, blue: 0.10)),
+        .init(id: "activity", title: "Activity", symbol: "waveform.path", tint: Color(red: 0.12, green: 0.72, blue: 0.34)),
+        .init(id: "extensions", title: "Extensions", symbol: "puzzlepiece.extension.fill", tint: Color(red: 0.70, green: 0.12, blue: 0.82)),
+        .init(id: "about", title: "Lara", symbol: "sparkles", tint: Color(red: 0.10, green: 0.66, blue: 0.96))
     ]
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 20), count: 4)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+    private var dockApps: [LaraSystemApp] { [apps[0], apps[1], apps[4], apps[3]] }
 
     var body: some View {
-        ZStack {
-            wallpaper.ignoresSafeArea()
-            VStack(spacing: 0) {
-                statusBar
-                HStack {
-                    Text(Date.now, format: .dateTime.weekday(.wide).month(.abbreviated).day())
-                        .font(.system(size: 15, weight: .medium))
-                    Spacer()
-                    Button { showControlCenter = true } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 16, weight: .semibold))
-                            .padding(11).background(.ultraThinMaterial, in: Circle())
-                    }.buttonStyle(.plain)
-                }.padding(.horizontal, 24).padding(.top, 12)
+        GeometryReader { geometry in
+            ZStack {
+                WallpaperView()
+                    .ignoresSafeArea()
 
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("LARA").font(.system(size: 12, weight: .heavy)).tracking(4).foregroundStyle(.cyan)
-                        Text("Welcome back").font(.system(size: 29, weight: .bold, design: .rounded))
+                VStack(spacing: 0) {
+                    HStack {
+                        Spacer()
+                        Button { showControlCenter = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 42, height: 42)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Control Center")
                     }
-                    Spacer()
-                }.padding(.horizontal, 24).padding(.top, 24)
+                    .padding(.horizontal, 22)
+                    .padding(.top, 4)
 
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles").foregroundStyle(.cyan)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Lara User Space").font(.subheadline.weight(.semibold))
-                        Text("Your isolated environment").font(.caption).foregroundStyle(.white.opacity(0.6))
+                    TabView(selection: $selectedPage) {
+                        appPage(apps, topInset: geometry.safeAreaInsets.top)
+                            .tag(0)
+                        appPage([], topInset: geometry.safeAreaInsets.top)
+                            .tag(1)
                     }
-                    Spacer()
-                    Text("0.1").font(.caption2.bold()).padding(.horizontal, 9).padding(.vertical, 5)
-                        .background(.white.opacity(0.12), in: Capsule())
-                }.padding(15).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(0.1), lineWidth: 1))
-                    .padding(.horizontal, 20).padding(.top, 22)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .indexViewStyle(.page(backgroundDisplayMode: .never))
 
-                LazyVGrid(columns: columns, spacing: 25) {
-                    ForEach(apps) { app in
-                        Button {
-                            openedApp = app
-                        } label: {
-                            VStack(spacing: 7) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 17)
-                                        .fill(LinearGradient(colors: [app.tint.opacity(0.95), app.tint.opacity(0.58)],
-                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    Image(systemName: app.symbol).font(.system(size: 26, weight: .medium))
-                                        .foregroundStyle(.white)
-                                        .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
-                                }.frame(width: 58, height: 58)
-                                    .overlay(RoundedRectangle(cornerRadius: 17).stroke(.white.opacity(0.25), lineWidth: 0.8))
-                                Text(app.title).font(.system(size: 11, weight: .medium)).lineLimit(1)
-                            }.frame(maxWidth: .infinity)
-                        }.buttonStyle(.plain)
+                    HStack(spacing: 7) {
+                        Capsule().fill(.white.opacity(selectedPage == 0 ? 0.95 : 0.42))
+                            .frame(width: selectedPage == 0 ? 17 : 6, height: 6)
+                        Circle().fill(.white.opacity(selectedPage == 1 ? 0.95 : 0.42))
+                            .frame(width: 6, height: 6)
                     }
-                }.padding(.horizontal, 22).padding(.top, 30)
+                    .padding(.vertical, 12)
+                    .accessibilityLabel("Home screen page \(selectedPage + 1) of 2")
 
-                Spacer()
-
-                HStack(spacing: 18) {
-                    dockButton(apps[0])
-                    dockButton(apps[1])
-                    dockButton(apps[4])
-                    dockButton(apps[3])
-                }.padding(.horizontal, 18).padding(.vertical, 15)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30))
-                    .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.15), lineWidth: 1))
-                    .padding(.horizontal, 28).padding(.bottom, 12)
-
-                Capsule().fill(.white.opacity(0.85)).frame(width: 135, height: 5).padding(.bottom, 7)
+                    DockView(apps: dockApps) { app in
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        openedApp = app
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 6)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 24)
+                    .onEnded { value in
+                        if value.translation.height < -70 {
+                            showControlCenter = true
+                        }
+                    }
+            )
         }
         .sheet(item: $openedApp) { app in
-            LaraSystemAppScreen(app: app).presentationDetents([.large]).presentationDragIndicator(.visible)
+            LaraSystemAppScreen(app: app)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showControlCenter) {
-            LaraControlCenter().presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            LaraControlCenter()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func appPage(_ pageApps: [LaraSystemApp], topInset: CGFloat) -> some View {
+        VStack {
+            LazyVGrid(columns: columns, spacing: 25) {
+                ForEach(pageApps) { app in
+                    AppIconView(app: app) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        openedApp = app
+                    }
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 12)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .contentMargins(.top, max(0, topInset * 0.08), for: .scrollContent)
+    }
+}
+
+private struct WallpaperView: View {
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.10, blue: 0.25),
+                        Color(red: 0.10, green: 0.08, blue: 0.28),
+                        Color(red: 0.01, green: 0.02, blue: 0.07),
+                        .black
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                Circle()
+                    .fill(Color(red: 0.12, green: 0.52, blue: 0.95).opacity(0.48))
+                    .frame(width: proxy.size.width * 0.8)
+                    .blur(radius: 85)
+                    .offset(x: proxy.size.width * 0.38, y: -proxy.size.height * 0.30)
+                Circle()
+                    .fill(Color.purple.opacity(0.34))
+                    .frame(width: proxy.size.width * 0.72)
+                    .blur(radius: 90)
+                    .offset(x: -proxy.size.width * 0.35, y: proxy.size.height * 0.02)
+                Circle()
+                    .fill(Color.cyan.opacity(0.16))
+                    .frame(width: proxy.size.width * 0.75)
+                    .blur(radius: 90)
+                    .offset(x: proxy.size.width * 0.2, y: proxy.size.height * 0.28)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
         }
     }
+}
 
-    private var wallpaper: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 0.08, green: 0.12, blue: 0.25),
-                                    Color(red: 0.03, green: 0.04, blue: 0.1), .black],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            Circle().fill(.cyan.opacity(0.20)).frame(width: 290).blur(radius: 75)
-                .offset(x: 120, y: -230)
-            Circle().fill(.purple.opacity(0.17)).frame(width: 300).blur(radius: 90)
-                .offset(x: -130, y: 70)
+private struct AppIconView: View {
+    let app: LaraSystemApp
+    let action: () -> Void
+    @State private var isPressed = false
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            VStack(spacing: 5) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [app.tint, app.tint.opacity(0.72)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Image(systemName: app.symbol)
+                        .font(.system(size: 29, weight: .medium))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.18), radius: 1, y: 1)
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(.white.opacity(0.16), lineWidth: 0.7)
+                }
+                Text(app.title)
+                    .font(.system(size: 11, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .shadow(color: .black.opacity(0.65), radius: 2, y: 1)
+            }
+            .scaleEffect(isPressed ? 0.91 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.62), value: isPressed)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(SpringBoardPressStyle(isPressed: $isPressed))
     }
+}
 
-    private var statusBar: some View {
-        HStack {
-            Text(Date.now, format: .dateTime.hour().minute()).font(.system(size: 15, weight: .bold))
-            Spacer()
-            Image(systemName: "antenna.radiowaves.left.and.right")
-            Image(systemName: "wifi")
-            Image(systemName: "battery.75percent").font(.system(size: 18))
-        }.padding(.horizontal, 25).padding(.top, 10)
+private struct SpringBoardPressStyle: ButtonStyle {
+    @Binding var isPressed: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { pressed in
+                isPressed = pressed
+            }
     }
+}
 
-    private func dockButton(_ app: LaraSystemApp) -> some View {
-        Button { openedApp = app } label: {
-            Image(systemName: app.symbol).font(.system(size: 23, weight: .medium))
-                .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 58)
-                .background(LinearGradient(colors: [app.tint.opacity(0.95), app.tint.opacity(0.6)],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing),
-                            in: RoundedRectangle(cornerRadius: 17))
-        }.buttonStyle(.plain)
+private struct DockView: View {
+    let apps: [LaraSystemApp]
+    let open: (LaraSystemApp) -> Void
+
+    var body: some View {
+        HStack(spacing: 17) {
+            ForEach(apps) { app in
+                Button {
+                    open(app)
+                } label: {
+                    Image(systemName: app.symbol)
+                        .font(.system(size: 25, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(1, contentMode: .fit)
+                        .background(
+                            LinearGradient(
+                                colors: [app.tint, app.tint.opacity(0.72)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(app.title)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 29, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 29, style: .continuous)
+                .stroke(.white.opacity(0.16), lineWidth: 0.8)
+        }
     }
 }
 
