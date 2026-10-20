@@ -147,6 +147,7 @@ private struct LaraSystemAppScreen: View {
     @State private var terminalLines = ["Lara Terminal 0.2", "Container-local user-space shell", "Type help to list commands."]
     @State private var currentDirectory = "/"
     @State private var runtimeError: String?
+    @State private var fileEntries: [String] = []
     @State private var notes = ""
 
     private var fileSystem: UserSpaceFileSystem {
@@ -226,7 +227,7 @@ private struct LaraSystemAppScreen: View {
         NavigationStack {
             List {
                 Section("RootFS — app container") {
-                    ForEach((try? fileSystem.list("/")) ?? [], id: \.self) { name in
+                    ForEach(fileEntries, id: \.self) { name in
                         Label(name, systemImage: "folder")
                     }
                 }
@@ -236,7 +237,14 @@ private struct LaraSystemAppScreen: View {
                 }
             }
             .navigationTitle("RootFS")
-            .task { try? fileSystem.prepare() }
+            .task {
+                do {
+                    try fileSystem.prepare()
+                    fileEntries = try fileSystem.list("/")
+                } catch {
+                    runtimeError = error.localizedDescription
+                }
+            }
         }
     }
 
