@@ -22,7 +22,7 @@ public enum UserSpaceFileError: Error, Equatable, LocalizedError {
 
 /// A small virtual filesystem rooted entirely inside Lara's app container.
 /// This is not a mount of iOS / and cannot access protected system files.
-public struct UserSpaceFileSystem: Sendable {
+public struct UserSpaceFileSystem: @unchecked Sendable {
     public let rootURL: URL
     private let fm = FileManager.default
 
